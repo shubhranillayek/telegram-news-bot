@@ -1,50 +1,62 @@
+import asyncio
 import logging
 
-import httpx
+import feedparser
 
 from fetchers.errors import FetchError
 from formatter import NewsItem
 
 logger = logging.getLogger(__name__)
 
-COINGECKO_NEWS_URL = "https://api.coingecko.com/api/v3/news"
+# Crypto news comes from free RSS feeds — no API key needed.
+# (CoinGecko's /news endpoint moved to its paid Pro tier and returns
+# 401 for keyless requests, so it is no longer used here.)
+COINDESK_RSS = "https://www.coindesk.com/arc/outboundfeeds/rss/"
+COINTELEGRAPH_RSS = "https://cointelegraph.com/rss"
+
+_RSS_SOURCES = [
+    ("CoinDesk", COINDESK_RSS),
+    ("CoinTelegraph", COINTELEGRAPH_RSS),
+]
 
 
-# no API key needed for CoinGecko public tier
-async def fetch(count: int) -> list[NewsItem]:
-    logger.info("Fetching %d crypto news items from CoinGecko", count)
+async def _fetch_from_rss(source: str, url: str, count: int) -> list[NewsItem]:
+    logger.info("Fetching %d crypto news items from %s RSS", count, source)
+    # feedparser.parse is blocking, so run it in a thread to avoid stalling the event loop
+    loop = asyncio.get_event_loop()
     try:
-        async with httpx.AsyncClient(timeout=8) as client:
-            resp = await client.get(
-                COINGECKO_NEWS_URL,
-                params={"per_page": count},
-            )
-            resp.raise_for_status()
-
-            data = resp.json()
-            articles = data["data"]
-
-            items = [
-                NewsItem(
-                    headline=article["title"],
-                    url=article.get("url"),
-                    source="CoinGecko",
-                )
-                for article in articles[:count]
-            ]
-            logger.info("Fetched %d crypto news items", len(items))
-            return items
-
-    except httpx.TimeoutException as exc:
+        feed = await loop.run_in_executor(None, feedparser.parse, url)
+    except Exception as exc:
         raise FetchError(
-            f"Request timed out after 8 seconds: {exc}", "CoinGecko"
+            f"Failed to parse {source} RSS feed: {exc}", source=source
         ) from exc
-    except httpx.HTTPStatusError as exc:
-        raise FetchError(
-            f"HTTP {exc.response.status_code}: {exc.response.reason_phrase}",
-            "CoinGecko",
-        ) from exc
-    except (KeyError, ValueError) as exc:
-        raise FetchError(
-            f"Failed to parse response: {exc}", "CoinGecko"
-        ) from exc
+
+    entries = feed.get("entries", [])
+    if not entries:
+        raise FetchError(f"{source} RSS feed returned no entries.", source=source)
+
+    items = [
+        NewsItem(
+            headline=entry.get("title") or "(no title)",
+            url=entry.get("link") or None,
+            source=source,
+        )
+        for entry in entries[:count]
+    ]
+    logger.info("Fetched %d crypto news items from %s", len(items), source)
+    return items
+
+
+async def fetch(count: int) -> list[NewsItem]:
+    last_err: FetchError | None = None
+    for source, url in _RSS_SOURCES:
+        try:
+            return await _fetch_from_rss(source, url, count)
+        except FetchError as err:
+            last_err = err
+            logger.warning("%s RSS failed (%s); trying next source.", source, err)
+
+    raise FetchError(
+        "All crypto news sources are unavailable.",
+        source="crypto",
+    ) from last_err
