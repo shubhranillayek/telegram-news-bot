@@ -1,0 +1,15 @@
+# Secrets — never commit real tokens or API keys
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Runtime data
+data/
+logs/*.log
+
+# Test / tooling caches
+.pytest_cache/
