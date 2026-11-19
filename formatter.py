@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -30,7 +30,7 @@ def format_news(
     schedule_id: int | None = None,
     now: datetime | None = None,
 ) -> str:
-    header = _build_header(topic, schedule_id, now or datetime.utcnow())
+    header = _build_header(topic, schedule_id, now or datetime.now(timezone.utc))
     lines: list[str] = [header]
 
     for i, item in enumerate(items, start=1):
