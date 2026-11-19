@@ -1,6 +1,6 @@
 # Telegram News Bot — Python Crypto and Stock News Automation
 
-Telegram News Bot is a Python project by [Shubhranil Layek](https://github.com/shubhranillayek) for fetching crypto, US stock and Indian stock news through commands or daily schedules. Schedules are stored in SQLite, and stock news has a Yahoo Finance RSS fallback. External news availability depends on the upstream providers.
+Telegram News Bot is a Python project by [Shubhranil Layek](https://github.com/shubhranillayek) for fetching crypto, US stock and Indian stock news through commands or daily schedules. Schedules are stored in SQLite, crypto news comes from free RSS feeds (no API key needed), and stock news has a Yahoo Finance RSS fallback. External news availability depends on the upstream providers.
 
 ## What it does
 
@@ -9,6 +9,7 @@ Telegram News Bot is a Python project by [Shubhranil Layek](https://github.com/s
 - Multiple schedules per user, each with its own ID
 - Schedules survive bot restarts (stored in SQLite)
 - Falls back to Yahoo Finance RSS if NewsAPI is down
+- Crypto news needs no API key — CoinDesk RSS first, CoinTelegraph RSS as fallback
 - Each user only sees their own schedules
 
 ## Setup
@@ -63,8 +64,8 @@ N must be between 1 and 20. All times are UTC.
 
 | Topic | Primary | Fallback |
 |---|---|---|
-| Crypto | CoinGecko (configured public endpoint) | — |
-| US Stocks | NewsAPI | Yahoo Finance RSS |
+| Crypto | CoinDesk RSS | CoinTelegraph RSS |
+| US Stocks | NewsAPI | Yahoo Finance RSS, then CNBC RSS |
 | Indian Stocks | NewsAPI | Yahoo Finance BSE RSS |
 
 ## Configuration
@@ -92,8 +93,8 @@ telegram-news-bot/
 ├── db.py            # SQLite layer
 ├── fetchers/
 │   ├── errors.py    # FetchError
-│   ├── crypto.py    # CoinGecko
-│   ├── stocks_us.py # NewsAPI + Yahoo Finance RSS (US)
+│   ├── crypto.py    # CoinDesk RSS + CoinTelegraph RSS
+│   ├── stocks_us.py # NewsAPI + Yahoo Finance / CNBC RSS (US)
 │   └── stocks_in.py # NewsAPI + Yahoo Finance RSS (India)
 ├── data/            # SQLite DB lives here (auto-created)
 └── logs/            # log file lives here (auto-created)
