@@ -2,6 +2,10 @@
 
 Telegram News Bot is a Python project by [Shubhranil Layek](https://github.com/shubhranillayek) for fetching crypto, US stock and Indian stock news through commands or daily schedules. Schedules are stored in SQLite, crypto news comes from free RSS feeds (no API key needed), and stock news has a Yahoo Finance RSS fallback. External news availability depends on the upstream providers.
 
+Built by [Shubhranil Layek](https://shubhranillayek.github.io/) — more of my Python and Telegram bot work is on my site.
+
+New to bots? I wrote a step-by-step beginner guide: [How to Build a Telegram Bot with Python](https://shubhranillayek.github.io/blog/how-to-build-a-telegram-bot-with-python/)
+
 ## What it does
 
 - Instant news delivery — send `/crypto top 5` and get 5 headlines right now
